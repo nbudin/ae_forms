@@ -4,6 +4,14 @@ module AeForms
   def ae_form_stylesheet
     <<-END_SRC
 <style type="text/css">
+form.aeform div.errors {
+  background-color: #fcc;
+  border: 1px black solid;
+  color: black;
+  padding-left: 1.5em;
+  padding-right: 1.5em;
+}
+
 form.aeform h1, form.aeform h2, form.aeform h3, form.aeform h4, form.aeform h5, form.aeform h6 {
   clear: both;
 }
@@ -64,6 +72,10 @@ form.aeform label {
     padding-right: 3%;
 }
 
+form.aeform label.error {
+    color: #c00;
+}
+
 form.aeform br {
     clear: left;
 }
@@ -93,13 +105,50 @@ form.aeform legend {
   class AeFormBuilder < ActionView::Helpers::FormBuilder
     (field_helpers - %w(check_box radio_button hidden_field) + %w(date_select)).each do |selector|
       src = <<-END_SRC
+        def label(field, options = {})
+          caption = if options.has_key?(:label)
+            options.delete(:label)
+          else
+            field.to_s.humanize
+          end
+          
+          lc = if options.has_key?(:class)
+            options.delete(:class)
+          else
+            ""
+          end
+          
+          if options[:error]
+            options.delete(:error)
+            lc = lc + " error"
+          elsif @template.flash[:error_fields] and @template.flash[:error_fields].include?(field)
+            lc = lc + " error"
+          end
+          
+          labelattrs = {:for => field, :class => lc}.update(options)
+          @template.content_tag("label", caption + ":", labelattrs)
+        end
+        
         def #{selector}(field, options = {})
-          label = options[:label] || field.to_s.humanize
-          (@template.content_tag("label", label + ":", :for => field) +
-            super)
+          label(field, options) + super
         end
       END_SRC
       class_eval src, __FILE__, __LINE__
+    end
+    
+    def errors(alttext = nil)
+      if @template.flash[:error_messages]
+        @template.content_tag("div",
+                              @template.content_tag("h2", "There were some errors processing your request.") +
+                              @template.content_tag("ul",
+                                                    @template.flash[:error_messages].collect do |m|
+                                                      @template.content_tag("li", m)
+                                                    end) +
+                              @template.content_tag("p", "Please correct these errors and resubmit."),
+                              :class => "errors")
+      elsif not alttext.nil?
+        @template.content_tag("p", alttext)
+      end
     end
 
     def select(field, choices, options = {})
