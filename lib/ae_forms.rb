@@ -63,7 +63,7 @@ form.aeform input[type=submit], form.aeform input[type=button] {
     float: none;
     width: auto;
     font-size: 90%;
-    height: 1.5em;
+    height: 1.75em;
 }
 
 form.aeform label {
