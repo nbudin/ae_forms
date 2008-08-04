@@ -164,4 +164,12 @@ form.aeform legend {
     options[:html] = (options[:html] || {}).merge(:class => "aeform")
     form_for(name, object, options.merge(:builder => AeFormBuilder), &proc)
   end
+  
+  def authenticity_options
+    if protect_against_forgery?
+      { :authenticity_token => form_authenticity_token }
+    else
+      { }
+    end
+  end
 end
